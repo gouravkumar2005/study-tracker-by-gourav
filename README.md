@@ -1,2 +1,3 @@
 # study-tracker-by-gourav
-this is a study tracker made by me .
+<h1>GOURAV KUMAR DEY </h1>
+<h2>study tracker</h2>
