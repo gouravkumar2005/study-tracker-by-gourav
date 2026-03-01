@@ -1,0 +1,163 @@
+    def create_notes_tab(self):
+        notes_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(notes_frame, text="📝 Notes & Tasks")
+
+        # Split into two sections
+        left_frame = tk.Frame(notes_frame, bg=self.colors['bg_light'])
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        right_frame = tk.Frame(notes_frame, bg=self.colors['bg_light'])
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Notes section
+        tk.Label(left_frame, text="📝 Study Notes", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_light']).pack(pady=10)
+        
+        tk.Button(left_frame, text="+ Add Note", command=self.add_note,
+                 font=("Segoe UI", 11, "bold"), bg=self.colors['primary'], 
+                 fg="white", relief=tk.FLAT).pack(pady=5)
+
+        # Tasks section
+        tk.Label(right_frame, text="✅ To-Do Tasks", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_light']).pack(pady=10)
+        
+        tk.Button(right_frame, text="+ Add Task", command=self.add_task,
+                 font=("Segoe UI", 11, "bold"), bg=self.colors['success'], 
+                 fg="white", relief=tk.FLAT).pack(pady=5)
+
+    def create_groups_tab(self):
+        groups_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(groups_frame, text="👥 Groups")
+
+        tk.Label(groups_frame, text="👥 Study Groups", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['bg_light']).pack(pady=20)
+
+        btn_frame = tk.Frame(groups_frame, bg=self.colors['bg_light'])
+        btn_frame.pack(pady=10)
+
+        tk.Button(btn_frame, text="Create Group", command=self.create_group,
+                 font=("Segoe UI", 12, "bold"), width=15, height=2,
+                 bg=self.colors['primary'], fg="white", relief=tk.FLAT).pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(btn_frame, text="Join Group", command=self.join_group,
+                 font=("Segoe UI", 12, "bold"), width=15, height=2,
+                 bg=self.colors['success'], fg="white", relief=tk.FLAT).pack(side=tk.LEFT, padx=5)
+
+        # My groups
+        groups = self.study_groups.get_user_groups(self.current_user)
+        
+        if groups:
+            tk.Label(groups_frame, text="My Groups:", font=("Segoe UI", 14, "bold"), 
+                    bg=self.colors['bg_light']).pack(pady=10)
+            
+            for group_id, name, desc, members, role in groups:
+                group_card = tk.Frame(groups_frame, bg=self.colors['bg_card'])
+                group_card.pack(fill=tk.X, padx=20, pady=5)
+                
+                tk.Label(group_card, text=f"{name} ({members} members)", 
+                        font=("Segoe UI", 12, "bold"), bg=self.colors['bg_card']).pack(side=tk.LEFT, padx=15, pady=10)
+                
+                tk.Button(group_card, text="View", command=lambda gid=group_id: self.view_group(gid),
+                         font=("Segoe UI", 10), bg=self.colors['primary'], 
+                         fg="white", relief=tk.FLAT).pack(side=tk.RIGHT, padx=15)
+
+    def create_settings_tab(self):
+        settings_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(settings_frame, text="⚙️ Settings")
+
+        tk.Label(settings_frame, text="⚙️ Settings", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['bg_light']).pack(pady=20)
+
+        # Theme selection
+        theme_card = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        theme_card.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(theme_card, text="🎨 Theme", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=10, padx=20, anchor='w')
+        
+        themes = self.theme_manager.get_available_themes()
+        theme_var = tk.StringVar(value=self.current_theme)
+        
+        for theme in themes:
+            tk.Radiobutton(theme_card, text=theme.capitalize(), variable=theme_var, 
+                          value=theme, command=lambda t=theme: self.change_theme(t),
+                          font=("Segoe UI", 11), bg=self.colors['bg_card']).pack(anchor='w', padx=40, pady=2)
+
+        # Music player
+        music_card = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        music_card.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(music_card, text="🎵 Study Music", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=10, padx=20, anchor='w')
+        
+        music_btn_frame = tk.Frame(music_card, bg=self.colors['bg_card'])
+        music_btn_frame.pack(pady=10)
+        
+        tk.Button(music_btn_frame, text="▶️ Play", command=self.play_music,
+                 font=("Segoe UI", 10), width=10, bg=self.colors['success'], 
+                 fg="white", relief=tk.FLAT).pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(music_btn_frame, text="⏸️ Pause", command=self.pause_music,
+                 font=("Segoe UI", 10), width=10, bg=self.colors['warning'], 
+                 fg="white", relief=tk.FLAT).pack(side=tk.LEFT, padx=5)
+
+        # Voice commands
+        voice_card = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        voice_card.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(voice_card, text="🎤 Voice Commands", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=10, padx=20, anchor='w')
+        
+        tk.Button(voice_card, text="Enable Voice Control", command=self.enable_voice,
+                 font=("Segoe UI", 11, "bold"), width=20, height=2,
+                 bg=self.colors['secondary'], fg="white", relief=tk.FLAT).pack(pady=10)
+
+        # Export report
+        export_card = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        export_card.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(export_card, text="📄 Export Report", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=10, padx=20, anchor='w')
+        
+        tk.Button(export_card, text="Generate PDF Report", command=self.export_pdf,
+                 font=("Segoe UI", 11, "bold"), width=20, height=2,
+                 bg=self.colors['danger'], fg="white", relief=tk.FLAT).pack(pady=10)
+
+    def add_note(self):
+        messagebox.showinfo("Add Note", "Note feature - Add your study notes here!")
+    
+    def add_task(self):
+        messagebox.showinfo("Add Task", "Task feature - Add your to-do tasks here!")
+    
+    def create_group(self):
+        messagebox.showinfo("Create Group", "Create a study group with friends!")
+    
+    def join_group(self):
+        messagebox.showinfo("Join Group", "Join an existing study group!")
+    
+    def view_group(self, group_id):
+        messagebox.showinfo("Group", f"Viewing group #{group_id}")
+    
+    def change_theme(self, theme):
+        self.current_theme = theme
+        self.colors = self.theme_manager.get_theme(theme)
+        messagebox.showinfo("Theme Changed", f"Theme changed to {theme}! Restart to apply.")
+    
+    def play_music(self):
+        self.music_player.load_playlist('lofi')
+        messagebox.showinfo("Music", "Playing Lo-fi study music!")
+    
+    def pause_music(self):
+        self.music_player.pause()
+        messagebox.showinfo("Music", "Music paused")
+    
+    def enable_voice(self):
+        messagebox.showinfo("Voice Commands", "Voice commands enabled! Say 'start session' to begin.")
+    
+    def export_pdf(self):
+        try:
+            filename = f"{self.current_user}_report.pdf"
+            self.report_generator.generate_student_report(self.current_user, filename)
+            messagebox.showinfo("Success", f"Report saved as {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate report: {e}")

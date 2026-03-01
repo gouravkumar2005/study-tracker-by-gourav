@@ -1,0 +1,185 @@
+    def create_analytics_tab(self):
+        analytics_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(analytics_frame, text="📊 Analytics")
+
+        canvas = tk.Canvas(analytics_frame, bg=self.colors['bg_light'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(analytics_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_light'])
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Header
+        header_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                              highlightbackground=self.colors['border'], highlightthickness=1)
+        header_card.pack(fill=tk.X, pady=20, padx=20)
+        tk.Label(header_card, text="📊 Advanced Analytics", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=20)
+
+        # Study Patterns
+        patterns = self.analytics_engine.get_study_patterns(self.current_user)
+        
+        patterns_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                highlightbackground=self.colors['border'], highlightthickness=1)
+        patterns_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(patterns_card, text="⏰ Your Study Patterns", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        info_frame = tk.Frame(patterns_card, bg=self.colors['bg_card'])
+        info_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(info_frame, text=f"🌟 Best Time: {patterns['best_time']} (Focus: {patterns['best_focus']}%)", 
+                font=("Segoe UI", 12), bg=self.colors['bg_card'], fg=self.colors['success']).pack(anchor='w', pady=5)
+        tk.Label(info_frame, text=f"⚠️ Worst Time: {patterns['worst_time']} (Focus: {patterns['worst_focus']}%)", 
+                font=("Segoe UI", 12), bg=self.colors['bg_card'], fg=self.colors['danger']).pack(anchor='w', pady=5)
+
+        # AI Recommendations
+        recommendations = self.analytics_engine.predict_best_study_time(self.current_user)
+        
+        ai_card = tk.Frame(scrollable_frame, bg=self.colors['secondary'], 
+                          highlightbackground=self.colors['secondary'], highlightthickness=2)
+        ai_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(ai_card, text="🤖 AI Recommendations", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['secondary'], fg="white").pack(pady=10, padx=20, anchor='w')
+        
+        for rec in recommendations:
+            tk.Label(ai_card, text=f"• {rec}", font=("Segoe UI", 11), 
+                    bg=self.colors['secondary'], fg="white").pack(anchor='w', padx=30, pady=3)
+        
+        tk.Label(ai_card, text="", bg=self.colors['secondary']).pack(pady=5)
+
+        # Weekly Report
+        report = self.analytics_engine.generate_weekly_report(self.current_user)
+        
+        report_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                              highlightbackground=self.colors['border'], highlightthickness=1)
+        report_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(report_card, text="📈 This Week's Report", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        stats_grid = tk.Frame(report_card, bg=self.colors['bg_card'])
+        stats_grid.pack(fill=tk.X, padx=20, pady=10)
+        
+        stats = [
+            ("Sessions", report['sessions'], self.colors['primary']),
+            ("Total Hours", f"{report['total_hours']}h", self.colors['success']),
+            ("Avg Focus", f"{report['avg_focus']}%", self.colors['warning']),
+            ("Grade", report['grade'], self.colors['danger'])
+        ]
+        
+        for i, (label, value, color) in enumerate(stats):
+            stat_box = tk.Frame(stats_grid, bg=color)
+            stat_box.grid(row=i//2, column=i%2, padx=10, pady=10, sticky="ew")
+            stats_grid.columnconfigure(i%2, weight=1)
+            
+            tk.Label(stat_box, text=str(value), font=("Segoe UI", 24, "bold"), 
+                    bg=color, fg="white").pack(pady=10)
+            tk.Label(stat_box, text=label, font=("Segoe UI", 11), 
+                    bg=color, fg="white").pack(pady=(0, 10))
+
+    def create_rewards_tab(self):
+        rewards_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(rewards_frame, text="🎮 Rewards")
+
+        canvas = tk.Canvas(rewards_frame, bg=self.colors['bg_light'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(rewards_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_light'])
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Header with coins
+        header_card = tk.Frame(scrollable_frame, bg=self.colors['warning'])
+        header_card.pack(fill=tk.X, pady=20, padx=20)
+        
+        coins, total_earned = self.gamification.get_user_coins(self.current_user)
+        
+        tk.Label(header_card, text="🎮 Rewards & Challenges", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['warning'], fg="white").pack(pady=15)
+        tk.Label(header_card, text=f"🪙 {coins} Coins | Total Earned: {total_earned}", 
+                font=("Segoe UI", 14, "bold"), bg=self.colors['warning'], fg="white").pack(pady=(0, 15))
+
+        # Daily Challenges
+        challenges = self.gamification.generate_daily_challenges(self.current_user)
+        
+        challenges_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                   highlightbackground=self.colors['border'], highlightthickness=1)
+        challenges_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(challenges_card, text="🎯 Today's Challenges", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        for challenge in challenges:
+            challenge_box = tk.Frame(challenges_card, bg=self.colors['success_light'], 
+                                    highlightbackground=self.colors['success'], highlightthickness=2)
+            challenge_box.pack(fill=tk.X, padx=20, pady=5)
+            
+            tk.Label(challenge_box, text=challenge['desc'], font=("Segoe UI", 12, "bold"), 
+                    bg=self.colors['success_light']).pack(side=tk.LEFT, padx=15, pady=10)
+            tk.Label(challenge_box, text=f"🪙 {challenge['reward']}", font=("Segoe UI", 11, "bold"), 
+                    bg=self.colors['success_light'], fg=self.colors['success']).pack(side=tk.RIGHT, padx=15)
+
+        # Leaderboard
+        leaderboard = self.gamification.get_leaderboard()
+        
+        leaderboard_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                    highlightbackground=self.colors['border'], highlightthickness=1)
+        leaderboard_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(leaderboard_card, text="🏆 Weekly Leaderboard", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        if leaderboard:
+            for i, (username, hours, focus, score) in enumerate(leaderboard[:5], 1):
+                rank_color = self.colors['warning'] if i <= 3 else self.colors['bg_light']
+                rank_box = tk.Frame(leaderboard_card, bg=rank_color)
+                rank_box.pack(fill=tk.X, padx=20, pady=3)
+                
+                tk.Label(rank_box, text=f"#{i}", font=("Segoe UI", 12, "bold"), 
+                        bg=rank_color, width=3).pack(side=tk.LEFT, padx=10, pady=5)
+                tk.Label(rank_box, text=username, font=("Segoe UI", 11), 
+                        bg=rank_color).pack(side=tk.LEFT, padx=10)
+                tk.Label(rank_box, text=f"{hours}h | {score} pts", font=("Segoe UI", 10), 
+                        bg=rank_color, fg=self.colors['text_secondary']).pack(side=tk.RIGHT, padx=10)
+
+        # Shop
+        shop_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                            highlightbackground=self.colors['border'], highlightthickness=1)
+        shop_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(shop_card, text="🛒 Rewards Shop", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        rewards = self.gamification.get_available_rewards()
+        
+        for reward in rewards[:5]:
+            reward_box = tk.Frame(shop_card, bg=self.colors['bg_light'])
+            reward_box.pack(fill=tk.X, padx=20, pady=5)
+            
+            tk.Label(reward_box, text=reward['name'], font=("Segoe UI", 11), 
+                    bg=self.colors['bg_light']).pack(side=tk.LEFT, padx=15, pady=8)
+            
+            buy_btn = tk.Button(reward_box, text=f"Buy ({reward['cost']} 🪙)", 
+                              command=lambda r=reward: self.purchase_reward(r),
+                              font=("Segoe UI", 9, "bold"), bg=self.colors['primary'], 
+                              fg="white", relief=tk.FLAT, cursor="hand2")
+            buy_btn.pack(side=tk.RIGHT, padx=15)
+
+    def purchase_reward(self, reward):
+        success, message = self.gamification.purchase_reward(self.current_user, reward['name'], reward['cost'])
+        if success:
+            messagebox.showinfo("Success", message)
+            self.create_main_screen()  # Refresh
+        else:
+            messagebox.showerror("Error", message)

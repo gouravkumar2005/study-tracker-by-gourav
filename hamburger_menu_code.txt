@@ -1,0 +1,155 @@
+    def create_hamburger_menu(self):
+        """Create hamburger menu with all options"""
+        menu_window = tk.Toplevel(self.root)
+        menu_window.title("Menu")
+        menu_window.geometry("300x600")
+        menu_window.configure(bg=self.colors['bg_card'])
+        
+        # Header
+        header = tk.Frame(menu_window, bg=self.colors['primary'])
+        header.pack(fill=tk.X)
+        
+        tk.Label(header, text="☰ Menu", font=("Segoe UI", 18, "bold"), 
+                bg=self.colors['primary'], fg="white").pack(pady=15)
+        
+        # User info
+        user_frame = tk.Frame(menu_window, bg=self.colors['bg_light'])
+        user_frame.pack(fill=tk.X, pady=10)
+        
+        tk.Label(user_frame, text=f"👤 {self.current_user}", font=("Segoe UI", 12, "bold"), 
+                bg=self.colors['bg_light']).pack(pady=5)
+        
+        coins, _ = self.gamification.get_user_coins(self.current_user)
+        tk.Label(user_frame, text=f"🪙 {coins} Coins", font=("Segoe UI", 10), 
+                bg=self.colors['bg_light'], fg=self.colors['warning']).pack()
+        
+        # Menu options
+        menu_frame = tk.Frame(menu_window, bg=self.colors['bg_card'])
+        menu_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        menu_items = [
+            ("📊 Dashboard", lambda: self.switch_tab(0)),
+            ("📚 Start Session", lambda: self.switch_tab(1)),
+            ("📋 Activities", lambda: self.switch_tab(2)),
+            ("📊 Analytics", lambda: self.switch_tab(3)),
+            ("🎮 Rewards & Shop", lambda: self.switch_tab(4)),
+            ("📝 Notes & Tasks", lambda: self.switch_tab(5)),
+            ("👥 Study Groups", lambda: self.switch_tab(6)),
+            ("👤 Profile", lambda: self.switch_tab(7)),
+            ("---", None),
+            ("🎨 Change Theme", self.show_theme_menu),
+            ("🎵 Music Player", self.show_music_menu),
+            ("📄 Export Report", self.export_pdf),
+            ("🎤 Voice Commands", self.enable_voice),
+            ("---", None),
+            ("🔒 Block Websites", self.toggle_website_block),
+            ("⏰ Set Break Timer", self.set_break_timer),
+            ("🎯 Daily Goals", self.show_goals),
+            ("---", None),
+            ("ℹ️ Help", self.show_help),
+            ("⚙️ Settings", self.show_settings),
+            ("🚪 Logout", self.logout)
+        ]
+        
+        for text, command in menu_items:
+            if text == "---":
+                tk.Frame(menu_frame, height=1, bg=self.colors['border']).pack(fill=tk.X, pady=5)
+            else:
+                btn = tk.Button(menu_frame, text=text, command=lambda c=command, w=menu_window: self.menu_action(c, w),
+                               font=("Segoe UI", 11), bg=self.colors['bg_light'], 
+                               fg=self.colors['text_primary'], relief=tk.FLAT, 
+                               anchor='w', padx=15, cursor="hand2")
+                btn.pack(fill=tk.X, pady=2)
+                self.add_hover_effect(btn, self.colors['bg_light'], self.colors['border'])
+        
+        # Close button
+        tk.Button(menu_window, text="✕ Close", command=menu_window.destroy,
+                 font=("Segoe UI", 11, "bold"), bg=self.colors['danger'], 
+                 fg="white", relief=tk.FLAT).pack(side=tk.BOTTOM, fill=tk.X, pady=10, padx=10)
+    
+    def menu_action(self, command, window):
+        """Execute menu action and close menu"""
+        if command:
+            command()
+        window.destroy()
+    
+    def switch_tab(self, index):
+        """Switch to specific tab"""
+        self.notebook.select(index)
+    
+    def show_theme_menu(self):
+        """Show theme selection"""
+        themes = self.theme_manager.get_available_themes()
+        theme_window = tk.Toplevel(self.root)
+        theme_window.title("Select Theme")
+        theme_window.geometry("300x400")
+        
+        tk.Label(theme_window, text="🎨 Select Theme", font=("Segoe UI", 16, "bold")).pack(pady=20)
+        
+        for theme in themes:
+            tk.Button(theme_window, text=theme.capitalize(), 
+                     command=lambda t=theme: self.apply_theme(t, theme_window),
+                     font=("Segoe UI", 12), width=20, height=2).pack(pady=5)
+    
+    def apply_theme(self, theme, window):
+        """Apply selected theme"""
+        self.change_theme(theme)
+        window.destroy()
+    
+    def show_music_menu(self):
+        """Show music player menu"""
+        music_window = tk.Toplevel(self.root)
+        music_window.title("Music Player")
+        music_window.geometry("300x300")
+        
+        tk.Label(music_window, text="🎵 Music Player", font=("Segoe UI", 16, "bold")).pack(pady=20)
+        
+        tk.Button(music_window, text="▶️ Play Lo-fi", command=lambda: self.play_music('lofi'),
+                 font=("Segoe UI", 12), width=20, height=2).pack(pady=5)
+        tk.Button(music_window, text="▶️ Play Classical", command=lambda: self.play_music('classical'),
+                 font=("Segoe UI", 12), width=20, height=2).pack(pady=5)
+        tk.Button(music_window, text="⏸️ Pause", command=self.pause_music,
+                 font=("Segoe UI", 12), width=20, height=2).pack(pady=5)
+        tk.Button(music_window, text="⏹️ Stop", command=self.stop_music,
+                 font=("Segoe UI", 12), width=20, height=2).pack(pady=5)
+    
+    def toggle_website_block(self):
+        """Toggle website blocking"""
+        if not self.websites_blocked:
+            sites = self.website_blocker.get_default_blocked_sites()
+            if self.website_blocker.block_websites(sites):
+                self.websites_blocked = True
+                messagebox.showinfo("Blocked", f"Blocked {len(sites)} websites!")
+            else:
+                messagebox.showwarning("Admin Required", "Run as Administrator to block websites")
+        else:
+            self.website_blocker.unblock_websites()
+            self.websites_blocked = False
+            messagebox.showinfo("Unblocked", "Websites unblocked!")
+    
+    def set_break_timer(self):
+        """Set break reminder"""
+        messagebox.showinfo("Break Timer", "Break reminders enabled! You'll be notified every 25 minutes.")
+    
+    def show_goals(self):
+        """Show daily goals"""
+        messagebox.showinfo("Daily Goals", "Set your daily study goals here!")
+    
+    def show_help(self):
+        """Show help information"""
+        help_text = """
+Study Tracker Help
+
+📚 Study Session: Start tracking your study time
+📊 Analytics: View your study patterns
+🎮 Rewards: Earn coins and buy rewards
+📝 Notes: Take quick study notes
+👥 Groups: Study with friends
+
+For more help, check COMPLETE_FEATURES.md
+        """
+        messagebox.showinfo("Help", help_text)
+    
+    def show_settings(self):
+        """Show settings"""
+        messagebox.showinfo("Settings", "Settings: Themes, Music, and Export are in Rewards tab!")

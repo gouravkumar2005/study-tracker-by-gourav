@@ -1,0 +1,61 @@
+
+    def stop_session(self):
+        self.session_running = False
+        self.face_detector.stop_camera()
+        self.activity_monitor.stop_monitoring()
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.join(timeout=2)
+        if self.monitor_window:
+            self.monitor_window.destroy()
+        self.show_activity_report()
+        messagebox.showinfo("Session Stopped", "Session stopped. Check activity report!")
+        self.create_main_screen()
+
+    def show_activity_report(self):
+        if not self.current_session_id:
+            return
+        
+        report_window = tk.Toplevel(self.root)
+        report_window.title("Session Activity Report")
+        report_window.geometry("900x600")
+        report_window.configure(bg=self.colors['bg_light'])
+        
+        main_frame = tk.Frame(report_window, bg=self.colors['bg_card'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        tk.Label(main_frame, text="📊 Session Activity Report", 
+                font=("Segoe UI", 20, "bold"), bg=self.colors['bg_card']).pack(pady=20)
+        
+        # Activity log
+        activities = self.activity_logger.get_session_activity_log(self.current_user, self.current_session_id)
+        
+        log_frame = tk.Frame(main_frame, bg=self.colors['bg_card'])
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        tk.Label(log_frame, text="Activity Log:", font=("Segoe UI", 14, "bold"), 
+                bg=self.colors['bg_card']).pack(anchor='w', pady=5)
+        
+        log_text = tk.Text(log_frame, height=15, width=100, font=("Consolas", 9))
+        log_text.pack(fill=tk.BOTH, expand=True)
+        
+        for activity in activities:
+            timestamp, activity_type, app_name, window_title, url = activity
+            log_text.insert(tk.END, f"[{timestamp}] {activity_type}\n")
+            log_text.insert(tk.END, f"  App: {app_name}\n")
+            if window_title:
+                log_text.insert(tk.END, f"  Window: {window_title}\n")
+            if url:
+                log_text.insert(tk.END, f"  URL: {url}\n")
+            log_text.insert(tk.END, "\n")
+        
+        log_text.config(state=tk.DISABLED)
+        
+        # Screenshots
+        screenshots = self.activity_logger.get_session_screenshots(self.current_user, self.current_session_id)
+        
+        tk.Label(main_frame, text=f"📸 Screenshots Captured: {len(screenshots)}", 
+                font=("Segoe UI", 12, "bold"), bg=self.colors['bg_card']).pack(pady=10)
+        
+        tk.Button(main_frame, text="Close", command=report_window.destroy,
+                 font=("Segoe UI", 12, "bold"), width=20, height=2,
+                 bg=self.colors['primary'], fg="white").pack(pady=10)

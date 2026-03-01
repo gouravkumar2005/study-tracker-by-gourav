@@ -1,0 +1,159 @@
+    def create_activities_tab(self):
+        activities_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(activities_frame, text="📋 Activities")
+
+        # Scrollable frame
+        canvas = tk.Canvas(activities_frame, bg=self.colors['bg_light'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(activities_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_light'])
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Header
+        header_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                              highlightbackground=self.colors['border'], highlightthickness=1)
+        header_card.pack(fill=tk.X, pady=20, padx=20)
+
+        tk.Label(header_card, text="📋 Session Activities", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['bg_card'], fg=self.colors['text_primary']).pack(pady=20)
+
+        # Get recent sessions
+        conn = sqlite3.connect(self.db.db_name)
+        c = conn.cursor()
+        c.execute('''SELECT id, date, hours, warnings, focus_score 
+                     FROM study_sessions 
+                     WHERE username=? AND completed=1 
+                     ORDER BY id DESC LIMIT 10''', (self.current_user,))
+        sessions = c.fetchall()
+        conn.close()
+
+        if not sessions:
+            tk.Label(scrollable_frame, text="No sessions yet. Start studying to see activities!", 
+                    font=("Segoe UI", 14), bg=self.colors['bg_light'], 
+                    fg=self.colors['text_secondary']).pack(pady=50)
+            return
+
+        # Session cards
+        for session_id, date, hours, warnings, focus_score in sessions:
+            session_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                   highlightbackground=self.colors['border'], highlightthickness=1)
+            session_card.pack(fill=tk.X, pady=10, padx=20)
+
+            # Session header
+            header = tk.Frame(session_card, bg=self.colors['primary'])
+            header.pack(fill=tk.X)
+            
+            tk.Label(header, text=f"Session #{session_id} - {date}", 
+                    font=("Segoe UI", 14, "bold"), bg=self.colors['primary'], 
+                    fg="white").pack(side=tk.LEFT, padx=15, pady=10)
+            
+            tk.Label(header, text=f"{hours}h | Focus: {focus_score}%", 
+                    font=("Segoe UI", 11), bg=self.colors['primary'], 
+                    fg="white").pack(side=tk.RIGHT, padx=15)
+
+            # Activity log
+            activities = self.activity_logger.get_session_activity_log(self.current_user, session_id)
+            
+            if activities:
+                log_frame = tk.Frame(session_card, bg=self.colors['bg_card'])
+                log_frame.pack(fill=tk.X, padx=15, pady=10)
+                
+                tk.Label(log_frame, text="Activities:", font=("Segoe UI", 11, "bold"), 
+                        bg=self.colors['bg_card']).pack(anchor='w', pady=5)
+                
+                # Show first 5 activities
+                for i, activity in enumerate(activities[:5]):
+                    timestamp, activity_type, app_name, window_title, url = activity
+                    
+                    activity_row = tk.Frame(log_frame, bg=self.colors['bg_light'])
+                    activity_row.pack(fill=tk.X, pady=2)
+                    
+                    time_str = timestamp.split()[1][:5]  # HH:MM
+                    tk.Label(activity_row, text=f"[{time_str}]", font=("Consolas", 9), 
+                            bg=self.colors['bg_light'], fg=self.colors['text_secondary']).pack(side=tk.LEFT, padx=5)
+                    
+                    tk.Label(activity_row, text=f"{app_name}", font=("Segoe UI", 9, "bold"), 
+                            bg=self.colors['bg_light']).pack(side=tk.LEFT, padx=5)
+                    
+                    if window_title and len(window_title) > 50:
+                        window_title = window_title[:50] + "..."
+                    tk.Label(activity_row, text=window_title or "", font=("Segoe UI", 9), 
+                            bg=self.colors['bg_light'], fg=self.colors['text_secondary']).pack(side=tk.LEFT, padx=5)
+                
+                if len(activities) > 5:
+                    tk.Label(log_frame, text=f"... and {len(activities)-5} more activities", 
+                            font=("Segoe UI", 9, "italic"), bg=self.colors['bg_card'], 
+                            fg=self.colors['text_secondary']).pack(anchor='w', pady=5)
+            
+            # Screenshots
+            screenshots = self.activity_logger.get_session_screenshots(self.current_user, session_id)
+            
+            if screenshots:
+                ss_frame = tk.Frame(session_card, bg=self.colors['bg_card'])
+                ss_frame.pack(fill=tk.X, padx=15, pady=10)
+                
+                tk.Label(ss_frame, text=f"📸 {len(screenshots)} Screenshots Captured", 
+                        font=("Segoe UI", 10, "bold"), bg=self.colors['bg_card'], 
+                        fg=self.colors['success']).pack(anchor='w')
+            
+            # View details button
+            btn_frame = tk.Frame(session_card, bg=self.colors['bg_card'])
+            btn_frame.pack(pady=10)
+            
+            view_btn = tk.Button(btn_frame, text="View Full Report", 
+                               command=lambda sid=session_id: self.show_session_details(sid),
+                               font=("Segoe UI", 10, "bold"), width=20, height=1,
+                               bg=self.colors['primary'], fg="white", relief=tk.FLAT, cursor="hand2")
+            view_btn.pack()
+            self.add_hover_effect(view_btn, self.colors['primary'], self.colors['primary_dark'])
+
+    def show_session_details(self, session_id):
+        details_window = tk.Toplevel(self.root)
+        details_window.title(f"Session #{session_id} Details")
+        details_window.geometry("900x600")
+        details_window.configure(bg=self.colors['bg_light'])
+        
+        main_frame = tk.Frame(details_window, bg=self.colors['bg_card'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        tk.Label(main_frame, text=f"📊 Session #{session_id} - Complete Report", 
+                font=("Segoe UI", 18, "bold"), bg=self.colors['bg_card']).pack(pady=15)
+        
+        # Activity log
+        activities = self.activity_logger.get_session_activity_log(self.current_user, session_id)
+        
+        log_frame = tk.Frame(main_frame, bg=self.colors['bg_card'])
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        tk.Label(log_frame, text="Complete Activity Log:", font=("Segoe UI", 12, "bold"), 
+                bg=self.colors['bg_card']).pack(anchor='w', pady=5)
+        
+        log_text = tk.Text(log_frame, height=20, width=100, font=("Consolas", 9), wrap=tk.WORD)
+        log_scroll = ttk.Scrollbar(log_frame, command=log_text.yview)
+        log_text.config(yscrollcommand=log_scroll.set)
+        
+        log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        for activity in activities:
+            timestamp, activity_type, app_name, window_title, url = activity
+            log_text.insert(tk.END, f"[{timestamp}] {activity_type}\n", "header")
+            log_text.insert(tk.END, f"  App: {app_name}\n")
+            if window_title:
+                log_text.insert(tk.END, f"  Window: {window_title}\n")
+            if url:
+                log_text.insert(tk.END, f"  URL: {url}\n")
+            log_text.insert(tk.END, "\n")
+        
+        log_text.tag_config("header", foreground=self.colors['primary'], font=("Consolas", 9, "bold"))
+        log_text.config(state=tk.DISABLED)
+        
+        # Close button
+        tk.Button(main_frame, text="Close", command=details_window.destroy,
+                 font=("Segoe UI", 12, "bold"), width=20, height=2,
+                 bg=self.colors['danger'], fg="white", relief=tk.FLAT).pack(pady=15)

@@ -1,0 +1,166 @@
+    def create_rewards_tab(self):
+        rewards_frame = tk.Frame(self.notebook, bg=self.colors['bg_light'])
+        self.notebook.add(rewards_frame, text="🎮 Rewards & Shop")
+
+        canvas = tk.Canvas(rewards_frame, bg=self.colors['bg_light'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(rewards_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_light'])
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Header with coins
+        header_card = tk.Frame(scrollable_frame, bg=self.colors['warning'])
+        header_card.pack(fill=tk.X, pady=20, padx=20)
+        
+        coins, total_earned = self.gamification.get_user_coins(self.current_user)
+        
+        tk.Label(header_card, text="🎮 Rewards & Shop", font=("Segoe UI", 20, "bold"), 
+                bg=self.colors['warning'], fg="white").pack(pady=15)
+        tk.Label(header_card, text=f"🪙 {coins} Coins | Total Earned: {total_earned}", 
+                font=("Segoe UI", 14, "bold"), bg=self.colors['warning'], fg="white").pack(pady=(0, 15))
+
+        # Themes Section
+        themes_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                              highlightbackground=self.colors['border'], highlightthickness=1)
+        themes_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(themes_card, text="🎨 Themes", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        themes = self.theme_manager.get_available_themes()
+        theme_var = tk.StringVar(value=self.current_theme)
+        
+        theme_grid = tk.Frame(themes_card, bg=self.colors['bg_card'])
+        theme_grid.pack(fill=tk.X, padx=20, pady=10)
+        
+        for i, theme in enumerate(themes):
+            theme_box = tk.Frame(theme_grid, bg=self.colors['bg_light'])
+            theme_box.grid(row=i//2, column=i%2, padx=10, pady=5, sticky="ew")
+            theme_grid.columnconfigure(i%2, weight=1)
+            
+            tk.Radiobutton(theme_box, text=theme.capitalize(), variable=theme_var, 
+                          value=theme, command=lambda t=theme: self.change_theme(t),
+                          font=("Segoe UI", 11), bg=self.colors['bg_light']).pack(side=tk.LEFT, padx=10, pady=8)
+            
+            if theme != 'light':
+                cost = 500 if theme == 'dark' else 750
+                tk.Label(theme_box, text=f"🪙 {cost}", font=("Segoe UI", 9, "bold"), 
+                        bg=self.colors['bg_light'], fg=self.colors['warning']).pack(side=tk.RIGHT, padx=10)
+
+        # Music Player Section
+        music_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                             highlightbackground=self.colors['border'], highlightthickness=1)
+        music_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(music_card, text="🎵 Study Music Player", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        music_btn_frame = tk.Frame(music_card, bg=self.colors['bg_card'])
+        music_btn_frame.pack(pady=10, padx=20)
+        
+        tk.Button(music_btn_frame, text="▶️ Play Lo-fi", command=lambda: self.play_music('lofi'),
+                 font=("Segoe UI", 10, "bold"), width=12, bg=self.colors['success'], 
+                 fg="white", relief=tk.FLAT).grid(row=0, column=0, padx=5, pady=5)
+        
+        tk.Button(music_btn_frame, text="▶️ Classical", command=lambda: self.play_music('classical'),
+                 font=("Segoe UI", 10, "bold"), width=12, bg=self.colors['primary'], 
+                 fg="white", relief=tk.FLAT).grid(row=0, column=1, padx=5, pady=5)
+        
+        tk.Button(music_btn_frame, text="⏸️ Pause", command=self.pause_music,
+                 font=("Segoe UI", 10, "bold"), width=12, bg=self.colors['warning'], 
+                 fg="white", relief=tk.FLAT).grid(row=1, column=0, padx=5, pady=5)
+        
+        tk.Button(music_btn_frame, text="⏹️ Stop", command=self.stop_music,
+                 font=("Segoe UI", 10, "bold"), width=12, bg=self.colors['danger'], 
+                 fg="white", relief=tk.FLAT).grid(row=1, column=1, padx=5, pady=5)
+
+        # Daily Challenges
+        challenges = self.gamification.generate_daily_challenges(self.current_user)
+        
+        challenges_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                   highlightbackground=self.colors['border'], highlightthickness=1)
+        challenges_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(challenges_card, text="🎯 Today's Challenges", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        for challenge in challenges:
+            challenge_box = tk.Frame(challenges_card, bg=self.colors['success_light'], 
+                                    highlightbackground=self.colors['success'], highlightthickness=2)
+            challenge_box.pack(fill=tk.X, padx=20, pady=5)
+            
+            tk.Label(challenge_box, text=challenge['desc'], font=("Segoe UI", 12, "bold"), 
+                    bg=self.colors['success_light']).pack(side=tk.LEFT, padx=15, pady=10)
+            tk.Label(challenge_box, text=f"🪙 {challenge['reward']}", font=("Segoe UI", 11, "bold"), 
+                    bg=self.colors['success_light'], fg=self.colors['success']).pack(side=tk.RIGHT, padx=15)
+
+        # Leaderboard
+        leaderboard = self.gamification.get_leaderboard()
+        
+        leaderboard_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                                    highlightbackground=self.colors['border'], highlightthickness=1)
+        leaderboard_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(leaderboard_card, text="🏆 Weekly Leaderboard", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        if leaderboard:
+            for i, (username, hours, focus, score) in enumerate(leaderboard[:5], 1):
+                rank_color = self.colors['warning'] if i <= 3 else self.colors['bg_light']
+                rank_box = tk.Frame(leaderboard_card, bg=rank_color)
+                rank_box.pack(fill=tk.X, padx=20, pady=3)
+                
+                tk.Label(rank_box, text=f"#{i}", font=("Segoe UI", 12, "bold"), 
+                        bg=rank_color, width=3).pack(side=tk.LEFT, padx=10, pady=5)
+                tk.Label(rank_box, text=username, font=("Segoe UI", 11), 
+                        bg=rank_color).pack(side=tk.LEFT, padx=10)
+                tk.Label(rank_box, text=f"{hours}h | {score} pts", font=("Segoe UI", 10), 
+                        bg=rank_color, fg=self.colors['text_secondary']).pack(side=tk.RIGHT, padx=10)
+
+        # Shop
+        shop_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                            highlightbackground=self.colors['border'], highlightthickness=1)
+        shop_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(shop_card, text="🛒 Rewards Shop", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        rewards = self.gamification.get_available_rewards()
+        
+        for reward in rewards[:5]:
+            reward_box = tk.Frame(shop_card, bg=self.colors['bg_light'])
+            reward_box.pack(fill=tk.X, padx=20, pady=5)
+            
+            tk.Label(reward_box, text=reward['name'], font=("Segoe UI", 11), 
+                    bg=self.colors['bg_light']).pack(side=tk.LEFT, padx=15, pady=8)
+            
+            buy_btn = tk.Button(reward_box, text=f"Buy ({reward['cost']} 🪙)", 
+                              command=lambda r=reward: self.purchase_reward(r),
+                              font=("Segoe UI", 9, "bold"), bg=self.colors['primary'], 
+                              fg="white", relief=tk.FLAT, cursor="hand2")
+            buy_btn.pack(side=tk.RIGHT, padx=15)
+
+        # Export Report Section
+        export_card = tk.Frame(scrollable_frame, bg=self.colors['bg_card'], 
+                              highlightbackground=self.colors['border'], highlightthickness=1)
+        export_card.pack(fill=tk.X, pady=10, padx=20)
+        
+        tk.Label(export_card, text="📄 Export Report", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['bg_card']).pack(pady=15, padx=20, anchor='w')
+        
+        tk.Button(export_card, text="📥 Generate PDF Report", command=self.export_pdf,
+                 font=("Segoe UI", 12, "bold"), width=25, height=2,
+                 bg=self.colors['secondary'], fg="white", relief=tk.FLAT).pack(pady=10)
+
+    def play_music(self, genre='lofi'):
+        self.music_player.load_playlist(genre)
+        messagebox.showinfo("Music", f"Playing {genre.capitalize()} study music!")
+    
+    def stop_music(self):
+        self.music_player.stop()
+        messagebox.showinfo("Music", "Music stopped")
